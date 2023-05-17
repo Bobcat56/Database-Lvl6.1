@@ -110,35 +110,50 @@ AS BEGIN
     FROM loading.JsonData
     WHERE ID = @ID;
 	
-	--Saving category name
-	DECLARE @CategoryName NVARCHAR(256);
-	DECLARE @BrandName NVARCHAR(256);
-
-	SELECT @CategoryName = JSON_VALUE(json_Data, '$.category'),
-		   @BrandName = JSON_VALUE(json_Data, '$.brand') 
-	FROM loading.JsonData
-    WHERE ID = @ID;
-
-	
 	/*d) Insert the unique brands obtained from the temporary table into the table main.brand. Make 
 		 sure not to insert existing brands.*/
-	INSERT INTO main.Brand 
-	(Brand_ID, Brand)
-    SELECT NEWID(), 
-		   brand
-    FROM #TempTable
-    WHERE brand NOT IN (SELECT brand 
+	DECLARE @BrandExists INT;
+	DECLARE @BrandName NVARCHAR(256);
+	DECLARE @UUIDBrand UNIQUEIDENTIFIER;
+
+	SELECT @BrandExists = COUNT(*) 
+	FROM #tempTable 
+	WHERE brand NOT IN (SELECT brand 
 						FROM main.Brand);
+
+	SELECT @BrandName = brand 
+	FROM #tempTable 
+	WHERE brand NOT IN (SELECT brand 
+						FROM main.Brand);
+
+	IF @BrandExists > 0
+	BEGIN
+		INSERT INTO main.Brand
+		VALUES (NEWID(), @BrandName);
+	END;
 	
 	/*e) Insert the unique categories obtained from the temporary table into the table main.category. 
 		 Make sure not to insert existing categories.*/
-	INSERT INTO main.Category
-	(Category_ID, Category)
-    SELECT NEWID(), 
-		   category
-    FROM #TempTable
-    WHERE category NOT IN (SELECT category 
-						   FROM main.Category)
+	DECLARE @CategoryExists INT;
+	DECLARE @CategoryName NVARCHAR(256);
+	DECLARE @UUIDCat UNIQUEIDENTIFIER;
+
+	SELECT @CategoryExists = COUNT(*) 
+	FROM #tempTable 
+	WHERE category NOT IN (SELECT category 
+						   FROM main.Category);
+
+	SELECT @CategoryName = category 
+		   FROM #tempTable 
+		   WHERE category NOT IN (SELECT category 
+						          FROM main.Category);
+
+
+	IF @CategoryExists > 0
+	BEGIN
+		INSERT INTO main.Category
+		VALUES (NEWID(), @CategoryName);
+	END;
 	
 	/*f) Insert the products obtained from the temporary table into the table main.product. Make sure 
 		 not to insert existing products (you can check this using the productid).*/
@@ -152,11 +167,11 @@ AS BEGIN
 		   rating,
 		   stock,
 		   (SELECT category_ID
-		    FROM main.Category
-		    WHERE category = @CategoryName),
+		   FROM main.Category
+		   WHERE category = @CategoryName),
 		   (SELECT brand_ID
-		    FROM main.Brand
-		    WHERE brand = @BrandName)
+		   FROM main.Brand
+		   WHERE brand = @BrandName)
 	FROM #tempTable
 	WHERE ID NOT IN (SELECT product_ID
 					 FROM main.Product)
@@ -166,11 +181,6 @@ GO
 /*			----	QUESTION 4		----
 	Create a trigger on the table loading.json_data that will fire after a record has been inserted. The 
 	trigger must have the following functionalities:
-	/*e) Use the ID obtained in part C and try to process the JSON data using the previously created
-		procedure main.processJson. This must have error handling. If not successful throw an error
-		Database Programming II Page 3 of 6
-		message with number 60002, state 1 and an appropriate message; then rollback the
-		transaction. */
 */
 
 --			Trigger trgAfterInsert			--
@@ -195,8 +205,6 @@ AS BEGIN
 	BEGIN TRY
 		EXEC loading.replaceQuotes @ID = @InsertedID;
 		EXEC main.processJson @ID = @InsertedID;
-
-	
 
 	/*f) If part D and E were successful, update the date processed field in the loading.json_data table 
 		  with the current time and commit the transaction. */
