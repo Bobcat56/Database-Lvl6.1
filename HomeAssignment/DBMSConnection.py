@@ -12,8 +12,7 @@ global conn
 '''
 a) A function called createConnection that accepts a server name, and a database name. The 
    function should establish a connection to the DBMS and return the connection.
-'''
-
+''''
 def createConnection(serverName, databaseName):
     global conn
     conn = pyodbc.connect('Driver = {SQL Server};'
@@ -28,7 +27,6 @@ def createConnection(serverName, databaseName):
 b) A function called closeConnection that accepts a database connection as a parameter, it closes 
    the connection, and exits the program
 '''
-
 def closeConnection(connection):
     connection.close()
     sys.exit
@@ -46,7 +44,6 @@ functionality:
         ii. An error that is returns if the file is not found.
         iii. A generic error.
 '''
-
 def loadData(filePath):
     global conn  
     try:
@@ -60,11 +57,11 @@ def loadData(filePath):
                         'VALUES {jsonString}, GETDATE())')
         cursor.commit()
     except pyodbc.DatabaseError:
-        print ('There was a problem with SQL')
+        print ('Error: There was a problem with SQL')
     except FileNotFoundError:
-        print ("File not found")
+        print ("Error: File not found")
     except:
-        print ("An error has occurred")
+        print ("Error: An unkown error has occurred")
 
 
 '''
@@ -78,9 +75,17 @@ the following functionality:
         i. An error that is returned from pyodbc.
         ii. A generic error.
 '''
+def getRatings(decimal):
+    global conn
+    try:
+        cursor = conn.cursor()
+        cursor.execute("EXEC main.getProductsRating({decimal})")
+        rows = cursor.fetchall()
 
-def getRatings():
-
+    except pyodbc.Error:
+        print("Error: ")
+    except:
+        print("Error: An unkown error has occurred")
 
 
 '''
@@ -93,7 +98,6 @@ f) A function called showMenu that displays the following options. The menu must
     c. Option 3: Exit 
         This will call closeConnection.
 '''
-
 def showMenu():
     while True:
         choice = input('Please choose one fo the following options')
@@ -108,15 +112,12 @@ def showMenu():
             fileLocation = input("File location?")
             loadData(fileLocation)
         elif choice == '2':
-            rating = input("Please choose a rating from 1 to 5: ")
+            rating = input("Enter your desired rating (1 to 5): ")
             getRatings(rating)
         elif choice == '3':
             print ('Exitting ...')
             closeConnection()
         else:
             print("Invalid option. Please choose from the options provided.")
-            
 
-        
-
-
+showMenu()
