@@ -118,7 +118,7 @@ AS BEGIN
 		   @BrandName = JSON_VALUE(json_Data, '$.brand') 
 	FROM loading.JsonData
     WHERE ID = @ID;
-
+	
 	
 	/*d) Insert the unique brands obtained from the temporary table into the table main.brand. Make 
 		 sure not to insert existing brands.*/
@@ -166,11 +166,6 @@ GO
 /*			----	QUESTION 4		----
 	Create a trigger on the table loading.json_data that will fire after a record has been inserted. The 
 	trigger must have the following functionalities:
-	/*e) Use the ID obtained in part C and try to process the JSON data using the previously created
-		procedure main.processJson. This must have error handling. If not successful throw an error
-		Database Programming II Page 3 of 6
-		message with number 60002, state 1 and an appropriate message; then rollback the
-		transaction. */
 */
 
 --			Trigger trgAfterInsert			--
@@ -191,26 +186,47 @@ AS BEGIN
 	/*d) Use the ID obtained in part C and try to replace the quotes using the previously created 
 		 procedure loading.replaceQuotes. This must have error handling. If not successful throw an 
 		 error message with number 60001, state 1 and an appropriate message; then rollback the 
-		 transaction. */
-	BEGIN TRY
-		EXEC loading.replaceQuotes @ID = @InsertedID;
-		EXEC main.processJson @ID = @InsertedID;
+		 transaction.
+	  e) Use the ID obtained in part C and try to process the JSON data using the previously created
+		 procedure main.processJson. This must have error handling. If not successful throw an error
+		 message with number 60002, state 1 and an appropriate message; then rollback the transaction.
+	  f) If part D and E were successful, update the date processed field in the loading.json_data table 
+		 with the current time and commit the transaction. */
+	DECLARE @ReplaceQuoteTrue BIT = 0;
+	DECLARE @ProcessJsonTrue BIT = 0;
 
-	
+	BEGIN TRY 
+		--d) Execute replaceQuotes
+		EXEC loading.replaceQuotes @ID = @InsertedID; 
+		SELECT @ReplaceQuoteTrue = 1;
 
-	/*f) If part D and E were successful, update the date processed field in the loading.json_data table 
-		  with the current time and commit the transaction. */
+		--e) Execute processJson
+		EXEC main.processJson @ID = @InsertedID;	  
+		SELECT @ProcessJsonTrue = 1;
+
+		--f) If successful, update date processed
 		UPDATE loading.JsonData
-        SET Date_Processed = GETDATE()
-        WHERE ID = @InsertedID;
-
+		SET Date_Processed = GETDATE()
+		WHERE ID = @InsertedID;
 	END TRY
-	BEGIN CATCH
-		ROLLBACK TRANSACTION; 
-		DECLARE @ErrorMessage NVARCHAR(100) = ERROR_MESSAGE(); --Change into an appropriate error message 
-		THROW 60001, @ErrorMessage, 1;
+	BEGIN CATCH 
+		--d) If replaceQuotes failed
+		IF @ReplaceQuoteTrue = 0				     
+		BEGIN
+			ROLLBACK TRANSACTION; 
+			DECLARE @ErrorMessage NVARCHAR(100) = 'Error encountered when replacing quotes';
+			THROW 60001, @ErrorMessage, 1;
+		END
+		--e) If processJson failed
+		ELSE IF @ProcessJsonTrue = 0
+		BEGIN 
+			ROLLBACK TRANSACTION; 
+			DECLARE @ErrorMessage NVARCHAR(100) = 'Error encountered while processing Json data';
+			THROW 60001, @ErrorMessage, 1;
+		END
 	END CATCH
 END;
+GO
 
 /*			----	QUESTION 5		----
 	Create a function main.getProductsRating that accepts a rating decimal number, and it returns the 
@@ -232,3 +248,19 @@ END;
 		…
 		]
 */
+CREATE OR ALTER FUNCTION main.getProductsRating (@Rating DECIMAL(4,2))
+RETURNS NVARCHAR(MAX)
+AS BEGIN
+	DECLARE @Json NVARCHAR(MAX) = (
+		SELECT title,
+			   price,
+			   rating,
+			   stock,
+			   brand
+		FROM main.Product
+		WHERE rating >= @Rating
+		FOR JSON AUTO
+	);
+
+    RETURN @Json;
+END;
