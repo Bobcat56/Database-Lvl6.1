@@ -20,7 +20,7 @@ GO
 
 --				Table json_data				--
 CREATE TABLE loading.JsonData (
-	ID INT PRIMARY KEY NOT NULL,
+	ID INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
 	json_Data NVARCHAR(MAX) NOT NULL,
 	date_Loaded DATETIME NOT NULL,
 	date_Processed DATETIME
@@ -207,7 +207,7 @@ AS BEGIN
 		--f) If successful, update date processed
 		UPDATE loading.JsonData
 		SET Date_Processed = GETDATE()
-		WHERE ID = @InsertedID;
+		WHERE ID = @InsertedID
 	END TRY
 	BEGIN CATCH 
 		--d) If replaceQuotes failed
@@ -265,15 +265,25 @@ AS BEGIN
 
     RETURN @Json;
 END;
-
+GO
 /*************************************************TESTS**************************************************/
+
 /*
 --Data from "Products_1.json"
-INSERT INTO loading.JsonData (ID, json_Data, date_Loaded)
-VALUES (7, '{"id": 7, "title": "Samsung Galaxy Book", "description": "Samsung Galaxy Book S (2020) Laptop With Intel Lakefield Chip, 8GB of RAM Launched", "price": 1499, "discountPercentage": 4.15, "rating": 4.25, "stock": 50, "brand": "Samsung", "category": "laptops", "thumbnail": "https://i.dummyjson.com/data/products/7/thumbnail.jpg", "images": ["https://i.dummyjson.com/data/products/7/1.jpg", "https://i.dummyjson.com/data/products/7/2.jpg", "https://i.dummyjson.com/data/products/7/3.jpg", "https://i.dummyjson.com/data/products/7/thumbnail.jpg"]}', GETDATE());
+INSERT INTO loading.JsonData (json_Data, date_Loaded)
+VALUES ('{"id": 7, "title": "Samsung Galaxy Book", "description": "Samsung Galaxy Book S (2020) Laptop With Intel Lakefield Chip, 8GB of RAM Launched", "price": 1499, "discountPercentage": 4.15, "rating": 4.25, "stock": 50, "brand": "Samsung", "category": "laptops", "thumbnail": "https://i.dummyjson.com/data/products/7/thumbnail.jpg", "images": ["https://i.dummyjson.com/data/products/7/1.jpg", "https://i.dummyjson.com/data/products/7/2.jpg", "https://i.dummyjson.com/data/products/7/3.jpg", "https://i.dummyjson.com/data/products/7/thumbnail.jpg"]}', GETDATE());
 
 DELETE FROM loading.JsonData
-WHERE ID = 7;
+WHERE ID = 1;
+
+DELETE FROM main.Product
+WHERE product_ID = 7;
+
+DELETE FROM main.Brand
+WHERE brand = 'Samsung';
+
+DELETE FROM main.Category
+WHERE category = 'laptops';
 
 --Testing procedure replaceQuotes
 EXEC loading.replaceQuotes 7;
@@ -282,7 +292,7 @@ EXEC loading.replaceQuotes 7;
 EXEC main.processJson 7;
 
 --Testing function getProductsRating
-SELECT main.getProductsRating(4);
+SELECT main.getProductsRating(1);
 
 SELECT *
 FROM main.Product;
@@ -295,4 +305,5 @@ FROM main.Category;
 
 SELECT *
 FROM loading.JsonData;
+
 */
