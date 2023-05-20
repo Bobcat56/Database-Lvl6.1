@@ -250,15 +250,14 @@ CREATE OR ALTER FUNCTION main.getProductsRating (@Rating DECIMAL(3,2))
 RETURNS NVARCHAR(MAX)
 AS BEGIN
 	DECLARE @Json NVARCHAR(MAX) = (
-		SELECT title,
-			   price,
-			   rating,
-			   stock,
-			   (SELECT brand
-			    FROM main.Brand b
-				JOIN main.Product p
-				ON (b.brand_ID = p.brand_ID)) AS [brand]
-		FROM main.Product
+		SELECT p.title,
+			   p.price,
+			   p.rating,
+			   p.stock,
+			   b.brand
+		FROM main.Product p
+		JOIN main.Brand b
+		ON (b.brand_ID = p.brand_ID)
 		WHERE rating >= @Rating
 		FOR JSON AUTO
 	);
@@ -272,6 +271,26 @@ GO
 --Data from "Products_1.json"
 INSERT INTO loading.JsonData (json_Data, date_Loaded)
 VALUES ('{"id": 7, "title": "Samsung Galaxy Book", "description": "Samsung Galaxy Book S (2020) Laptop With Intel Lakefield Chip, 8GB of RAM Launched", "price": 1499, "discountPercentage": 4.15, "rating": 4.25, "stock": 50, "brand": "Samsung", "category": "laptops", "thumbnail": "https://i.dummyjson.com/data/products/7/thumbnail.jpg", "images": ["https://i.dummyjson.com/data/products/7/1.jpg", "https://i.dummyjson.com/data/products/7/2.jpg", "https://i.dummyjson.com/data/products/7/3.jpg", "https://i.dummyjson.com/data/products/7/thumbnail.jpg"]}', GETDATE());
+
+INSERT INTO loading.JsonData (json_Data, date_Loaded)
+VALUES('{"id": 4,
+      "title": "OPPOF19",
+      "description": "OPPO F19 is officially announced on April 2021.",
+      "price": 280,
+      "discountPercentage": 17.91,
+      "rating": 4.3,
+      "stock": 123,
+      "brand": "OPPO",
+      "category": "smartphones",
+      "thumbnail": "https://i.dummyjson.com/data/products/4/thumbnail.jpg",
+      "images": [
+        "https://i.dummyjson.com/data/products/4/1.jpg",
+        "https://i.dummyjson.com/data/products/4/2.jpg",
+        "https://i.dummyjson.com/data/products/4/3.jpg",
+        "https://i.dummyjson.com/data/products/4/4.jpg",
+        "https://i.dummyjson.com/data/products/4/thumbnail.jpg"
+      ]
+    }', GETDATE())
 
 DELETE FROM loading.JsonData
 WHERE ID = 1;
@@ -305,5 +324,6 @@ FROM main.Category;
 
 SELECT *
 FROM loading.JsonData;
+
 
 */

@@ -61,9 +61,7 @@ def loadData(filePath):
         #    Hint: the JSON data must be converted to string.
         cursor = conn.cursor()
 
-        cursor.execute('INSERT INTO loading.JsonData (json_Data, date_Loaded)'
-                       f'VALUES {jsonString}, GETDATE());'
-                       )
+        cursor.execute('INSERT INTO loading.JsonData (json_Data, date_Loaded) VALUES (' + jsonString + ', GETDATE());')
         cursor.commit()
     #   c. You must use error handling in this function taking care of 3 types of errors as follows.
     #      For each case, make sure to print an appropriate message.
@@ -96,10 +94,16 @@ def getRatings(decimal):
 
         # b. It must print the result of the function as a table.
         # Hint: you can use pandas package to read JSON data.
-        rowData = cursor.fetchall()
-        table = pandas.read_json(rowData, lines=True)
-        df = pandas.DataFrame(table)
-        print(df)
+        rowData = pandas.DataFrame(cursor.fetchall())
+
+        for item in rowData.items():
+            result = item[1].values[0].__str__()
+            jsonPart1 = result.split("[")[1]
+            jsonPart2 = jsonPart1.split("]")[0]
+
+            dict = json.loads(jsonPart2)
+            df = pandas.DataFrame(dict, index=[0])
+            print(df)
 
     # c. You must use error handling in this function taking care of 2 types of errors as follows.
     # For each case, make sure to print an appropriate message.
